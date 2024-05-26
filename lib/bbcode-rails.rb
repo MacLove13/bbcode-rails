@@ -9,7 +9,7 @@ module BBCode
     @tags
   end
 
-  def self.get_tag_by_name name
+  def self.get_tag_by_name(name)
     if defined?(Rails) && Rails.env.development?
       begin
         "#{name}_tag".camelize.constantize
@@ -19,7 +19,7 @@ module BBCode
     @tags["#{name.to_s.downcase}tag"]
   end
 
-  def self.parse str, raise_error=false
+  def self.parse(str, raise_error = false)
     str = str.dup
 
     str.gsub!('&', '&amp;')
@@ -28,29 +28,14 @@ module BBCode
     str.gsub!('"', '&quot;')
     str.gsub!("'", '&apos;')
 
-    # Let's iterate over the pieces to build a tree
-    # It works like this:
-    # For each object you have two things:
-    #   1. It is a tag name a la [img]
-    #   2. It is a simple string, something like 'Hello'
-    #
-    # Now, we want a tree that looks like this
-    #
-    # -> |
-    #    | ImgTag src: http://adada
-    #    | String This cat
-    #    | BTag is -> |
-    #                 | ITag funny!
-    # In the end we just recursively append
-
     result = []
 
-    tag_open          = /\[/
-    tag_close         = /\]/
-    tag_close_prefix  = /\//
-    tag_arg           = /=/
-    tag_arg_delim     = /&quot;/
-    tag_name          = /[-_a-z0-9]/
+    tag_open = /\[/
+    tag_close = /\]/
+    tag_close_prefix = /\//
+    tag_arg = /=/
+    tag_arg_delim = /&quot;/
+    tag_name = /[-_a-z0-9]/
 
     current_state = :text
     current_tag = result
@@ -61,41 +46,34 @@ module BBCode
         case current_state
         when :text
           tmp = ""
-          # We iterate through the string either until the end or if we find a [
           while not str[pos] =~ tag_open and pos < str.length
             tmp << str[pos]
             pos = pos.next
           end
           current_tag << tmp
-          current_state = :tag_name if pos < str.length # Okay, we have found the beginning of a possible tag!
+          current_state = :tag_name if pos < str.length
           pos = pos.next
         when :tag_name
           name = ""
-          if str[pos-1] =~ tag_open and str[pos] =~ tag_close_prefix
-            # It's a closing tag!
-            # Let's check if it applies to our current tag..
 
+          if str[pos - 1] =~ tag_open and str[pos] =~ tag_close_prefix
             broke_out = false
             tag = current_tag
             until tag.is_a? Array
               len = tag.name.length
-              if str[pos+1,len] == tag.name and str[pos+len+1] =~ tag_close
-                # If it's the current one?
+              if str[pos + 1, len] == tag.name and str[pos + len + 1] =~ tag_close
                 if current_tag == tag
                   current_tag = tag.parent
-                  pos += len+1
+                  pos += len + 1
                   broke_out = true
                   break
                 else
-                  # It's not the current one! Invalid construct
                   raise BBCode::ParseError, "Invalid nested tags"
                 end
               end
               tag = tag.parent
             end
 
-            # It's not a closing tag we recognize, so it's text really!
-            # Let's restore this!
             if not broke_out
               current_tag << "[/"
             end
@@ -103,15 +81,22 @@ module BBCode
             pos = pos.next
             next
           end
+
           while not (str[pos] =~ tag_close and str[pos] =~ tag_arg and pos < str.length) and str[pos] =~ tag_name
             name << str[pos]
             pos = pos.next
           end
 
           if str[pos] =~ tag_arg or str[pos] =~ tag_close
+            if name.downcase == "code"
+              current_state = :code_tag
+              pos = pos.next
+              next
+            end
+
             if self.get_tag_by_name(name)
               new_tag = self.get_tag_by_name(name).new(current_tag)
-              current_tag  << new_tag
+              current_tag << new_tag
               if new_tag.has_option(:content) or new_tag.has_option(:argument)
                 current_tag = new_tag
               end
@@ -132,9 +117,16 @@ module BBCode
             next
           end
 
-
-          # Did we hit the end? Let's get out
           current_tag << name
+          current_state = :text
+        when :code_tag
+          tmp = ""
+          while not (str[pos, 7] == "[/code]") and pos < str.length
+            tmp << str[pos]
+            pos = pos.next
+          end
+          current_tag << "<pre><code>#{ERB::Util.html_escape(tmp)}</code></pre>"
+          pos += 7
           current_state = :text
         when :tag_arg
           arg = ""
@@ -156,11 +148,9 @@ module BBCode
 
       result_str = result.map(&:to_s).join('').strip
 
-      # extracted from bb-ruby, which extracted it from Rails ActionPack
       start_tag = '<p>'
-      result_str.gsub!(/\r\n?/, "\n")                   # \r\n and \r => \n
-      result_str.gsub!(/\n\n+/, "</p>\n\n#{start_tag}") # 2+ newline  => paragraph
-      #result_str.gsub!(/([^\n>]\n)(?=[^\n<])/, '\1<br>')# 1 newline   => br
+      result_str.gsub!(/\r\n?/, "\n")
+      result_str.gsub!(/\n\n+/, "</p>\n\n#{start_tag}")
       result_str.insert 0, start_tag
       result_str << '</p>'
     rescue BBCode::ParseError => e
@@ -171,11 +161,10 @@ module BBCode
       end
     end
   end
-
 end
 
 class String
-  def bbcode_to_html raise_error = false
+  def bbcode_to_html(raise_error = false)
     BBCode.parse(self, raise_error)
   end
 end

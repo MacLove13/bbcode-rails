@@ -15,6 +15,11 @@ describe BBCode do
     expect(BBCode.parse "[br]").to eq "<p><br></p>"
   end
 
+  it 'correctly parses the Code tag' do
+    expect(CodeTag).not_to be nil
+    expect(BBCode.parse "[code]asdasd[b]oi[/b][/code]").to eq "<p><pre><code>asdasd[b]oi[/b]</code></pre></p>"
+  end
+
   it 'correctly parses the user tag' do
     expect(UserTag).not_to be nil
     expect(BBCode.parse "[user=Neikos]").to eq "<p><p>Name: Neikos</p></p>"

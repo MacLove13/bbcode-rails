@@ -31,6 +31,14 @@ class UserTag < BBCode::Tag
   end
 end
 
+class CodeTag < BBCode::Tag
+  block_options :content
+
+  on_layout do |contents|
+    "<pre><code>#{contents}</code></pre>"
+  end
+end
+
 class QuoteTag < BBCode::Tag
   block_options :argument, :content
 
