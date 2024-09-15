@@ -1,19 +1,13 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'bbcode-rails'
 
-class ITag < BBCode::Tag
-  block_options :content
-
-  on_layout do |content|
-    "<em>#{content}</em>"
-  end
-end
-
-class BTag < BBCode::Tag
-  block_options :content
-
-  on_layout do |content|
-    "<strong>#{content}</strong>"
+RSpec.configure do |config|
+  config.before(:each) do
+    load 'lib/generators/bb_code/templates/b_tag.rb'
+    load 'lib/generators/bb_code/templates/code_tag.rb'
+    load 'lib/generators/bb_code/templates/i_tag.rb'
+    load 'lib/generators/bb_code/templates/img_tag.rb'
+    load 'lib/generators/bb_code/templates/quote_tag.rb'
   end
 end
 
@@ -31,25 +25,3 @@ class UserTag < BBCode::Tag
   end
 end
 
-class CodeTag < BBCode::Tag
-  block_options :content
-
-  on_layout do |contents|
-    "<pre><code>#{contents}</code></pre>"
-  end
-end
-
-class QuoteTag < BBCode::Tag
-  block_options :argument, :content
-
-  on_layout do |args, content|
-    <<OA
-<p>
-Text: #{content}
-</p>
-<em>
-User: #{args}
-</em>
-OA
-  end
-end

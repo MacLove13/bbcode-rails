@@ -4,6 +4,9 @@ class <%= name.classify %>Tag < BBCode::Tag
   # with your needed option
   # block_options :argument, :content
 
+  def start_tag; end
+  def end_tag; end
+
   # Be sure to put in only the arguments that you need.
   # So if you only take an argument, remove contents, same the other way around.
   # However if you have both, they have to be in the order of `arg, contents`

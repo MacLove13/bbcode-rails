@@ -1,8 +1,11 @@
 class CodeTag < BBCode::Tag
   block_options :content
 
-  on_layout do |contents|
-    "<pre><code>#{contents}</code></pre>"
+  def start_tag
+    "<div class=\"code-container\"><pre><code class=\"code-block\">"
+  end
+
+  def end_tag
+    "</code></pre><button class=\"copy-button\">Copy</button></div>"
   end
 end
-

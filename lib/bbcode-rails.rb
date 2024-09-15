@@ -125,7 +125,10 @@ module BBCode
             tmp << str[pos]
             pos = pos.next
           end
-          current_tag << "<pre><code>#{ERB::Util.html_escape(tmp)}</code></pre>"
+
+          code_tag = CodeTag.new(tmp)
+          current_tag << "#{code_tag.start_tag}#{ERB::Util.html_escape(tmp)}#{code_tag.end_tag}"
+
           pos += 7
           current_state = :text
         when :tag_arg
